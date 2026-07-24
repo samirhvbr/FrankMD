@@ -90,6 +90,6 @@
 
   <!-- Version -->
   <div class="flex-none border-t border-[var(--theme-border)] px-3 py-1.5 text-xs text-[var(--theme-text-faint)] text-center">
-    <%= t('app.name') %> v<%= app_version %>
+    <%= t('app.name') %> v<%= app_version %><% if fork_version %> &middot; fork v<%= fork_version %><% end %>
   </div>
 </aside>
