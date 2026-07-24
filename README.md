@@ -236,6 +236,16 @@ export FRANKMD_BROWSER="/Applications/Google Chrome.app/Contents/MacOS/Google Ch
 
 Firefox opens in a regular browser window (it has no Chromium-style app-window mode); use a Chromium-based browser for the borderless app experience.
 
+### Native Desktop App (Optional)
+
+The `fed` command opens FrankMD in a browser `--app` window, which on Linux
+shares the browser's window identity (it groups with your other Brave/Chrome
+windows in Alt-Tab and shows the browser's icon). If you'd rather have a real
+native app — its own icon, its own Alt-Tab / Dock entry — there is a Tauri-based
+desktop wrapper under [`desktop/`](desktop/). It does the same container
+plumbing as `fed` but renders in a system webview instead of a browser. See
+[`desktop/README.md`](desktop/README.md) for build and install instructions.
+
 ### Running in Background
 
 To run as a persistent service:

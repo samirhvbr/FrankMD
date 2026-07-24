@@ -1,0 +1,24 @@
+[package]
+name = "frankmd-desktop"
+version = "0.1.0"
+description = "FrankMD native desktop wrapper"
+authors = ["FrankMD contributors"]
+edition = "2021"
+rust-version = "1.77"
+license = "MIT"
+repository = "https://github.com/samirhvbr/FrankMD"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+# http-only agent (localhost health check); no TLS pulled in
+ureq = { version = "2", default-features = false }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true
