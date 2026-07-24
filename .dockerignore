@@ -50,3 +50,6 @@
 # Ignore Docker-related files
 /.dockerignore
 /Dockerfile*
+
+# Ignore the native desktop wrapper (Tauri/Rust) — not part of the Rails image
+/desktop
