@@ -5,12 +5,14 @@
 //!
 //! Responsibilities (mirrors the `fed` shell function in `config/fed/fed.sh`,
 //! but as a native app with its own window identity):
-//!   1. Ensure the `frankmd` Docker container is running for the chosen notes dir.
-//!   2. Wait for Rails to answer `/up`.
-//!   3. Navigate the native webview to the running app.
+//!   1. Resolve which notes directory to open.
+//!   2. Ensure the `frankmd` Docker container is running for it.
+//!   3. Wait for Rails to answer `/up`, then navigate the webview to the app.
 //!
 //! Notes directory resolution (first hit wins):
-//!   CLI arg 1  ->  $FRANKMD_NOTES  ->  current working directory
+//!   CLI arg 1  ->  $FRANKMD_NOTES  ->  last remembered dir (if it still exists)
+//!   ->  native folder picker.  A valid choice is remembered for next launch.
+//!   If the picker is cancelled, the app shows a message and does not boot.
 //!
 //! Overridable via env: FRANKMD_IMAGE, FRANKMD_PORT, IMAGES_PATH.
 
@@ -20,11 +22,13 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use tauri::{AppHandle, Manager, Url};
+use tauri_plugin_dialog::DialogExt;
 
 const CONTAINER: &str = "frankmd";
 const DEFAULT_IMAGE: &str = "akitaonrails/frankmd:latest";
 const DEFAULT_PORT: &str = "7591";
 const BOOT_TIMEOUT: Duration = Duration::from_secs(90);
+const LAST_DIR_FILE: &str = "last-notes-dir";
 
 /// Host env vars forwarded into the container (the `.fed` file still overrides
 /// these at runtime). Kept in sync with `config/fed/fed.sh`.
@@ -69,20 +73,32 @@ fn health_url() -> String {
 }
 
 fn main() {
-    let notes = resolve_notes_dir();
-
     tauri::Builder::default()
-        .setup(move |app| {
+        .plugin(tauri_plugin_dialog::init())
+        .setup(|app| {
             let handle = app.handle().clone();
             // Boot the backend off the UI thread; the splash is already visible.
-            thread::spawn(move || boot(handle, notes));
+            thread::spawn(move || boot(handle));
             Ok(())
         })
         .run(tauri::generate_context!())
         .expect("error while running the FrankMD desktop app");
 }
 
-fn boot(handle: AppHandle, notes: PathBuf) {
+fn boot(handle: AppHandle) {
+    let notes = match resolve_notes_dir(&handle) {
+        Some(dir) => dir,
+        None => {
+            show_error(
+                &handle,
+                "No notes folder selected.\n\nClose and reopen FrankMD to choose one.",
+            );
+            return;
+        }
+    };
+
+    set_status(&handle, "Starting FrankMD…");
+
     if let Err(err) = ensure_container(&notes) {
         show_error(&handle, &format!("Could not start the FrankMD container.\n\n{err}"));
         return;
@@ -97,22 +113,85 @@ fn boot(handle: AppHandle, notes: PathBuf) {
     }
 }
 
-/// First existing of: argv[1], $FRANKMD_NOTES, current dir.
-fn resolve_notes_dir() -> PathBuf {
+// --- Notes directory resolution ------------------------------------------------
+
+/// CLI arg -> $FRANKMD_NOTES -> remembered dir -> folder picker. Remembers valid choices.
+fn resolve_notes_dir(handle: &AppHandle) -> Option<PathBuf> {
     if let Some(arg) = std::env::args().nth(1) {
-        return canonical_or(PathBuf::from(arg));
-    }
-    if let Ok(env) = std::env::var("FRANKMD_NOTES") {
-        if !env.is_empty() {
-            return canonical_or(PathBuf::from(env));
+        let p = canonical_or(PathBuf::from(arg));
+        if p.is_dir() {
+            remember_dir(handle, &p);
+            return Some(p);
         }
     }
-    std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+
+    if let Ok(env) = std::env::var("FRANKMD_NOTES") {
+        if !env.is_empty() {
+            let p = canonical_or(PathBuf::from(env));
+            if p.is_dir() {
+                remember_dir(handle, &p);
+                return Some(p);
+            }
+        }
+    }
+
+    // Last remembered directory — only if it still exists (it may have been
+    // moved or deleted since last time).
+    if let Some(last) = load_remembered_dir(handle) {
+        if last.is_dir() {
+            return Some(last);
+        }
+    }
+
+    // Nothing usable: ask the user to pick a folder.
+    set_status(handle, "Choose your notes folder…");
+    if let Some(picked) = pick_folder(handle) {
+        remember_dir(handle, &picked);
+        return Some(picked);
+    }
+
+    None
+}
+
+fn pick_folder(handle: &AppHandle) -> Option<PathBuf> {
+    handle
+        .dialog()
+        .file()
+        .set_title("Select your FrankMD notes folder")
+        .blocking_pick_folder()
+        .and_then(|fp| fp.into_path().ok())
+}
+
+fn remembered_dir_path(handle: &AppHandle) -> Option<PathBuf> {
+    let config_dir = handle.path().app_config_dir().ok()?;
+    Some(config_dir.join(LAST_DIR_FILE))
+}
+
+fn load_remembered_dir(handle: &AppHandle) -> Option<PathBuf> {
+    let file = remembered_dir_path(handle)?;
+    let content = std::fs::read_to_string(file).ok()?;
+    let trimmed = content.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(PathBuf::from(trimmed))
+    }
+}
+
+fn remember_dir(handle: &AppHandle, path: &Path) {
+    if let Some(file) = remembered_dir_path(handle) {
+        if let Some(parent) = file.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        let _ = std::fs::write(file, path.to_string_lossy().as_bytes());
+    }
 }
 
 fn canonical_or(p: PathBuf) -> PathBuf {
     std::fs::canonicalize(&p).unwrap_or(p)
 }
+
+// --- Container orchestration ---------------------------------------------------
 
 /// Ensure a `frankmd` container is running with `notes` mounted at /rails/notes.
 /// If one is running with a different notes mount, it is stopped and replaced.
@@ -278,6 +357,8 @@ fn docker(args: &[&str]) -> Result<std::process::Output, String> {
         .map_err(|e| format!("failed to run `docker` (is it installed and on PATH?): {e}"))
 }
 
+// --- Health + navigation -------------------------------------------------------
+
 fn wait_for_health(timeout: Duration) -> bool {
     let url = health_url();
     let start = Instant::now();
@@ -303,15 +384,26 @@ fn navigate_to_app(handle: &AppHandle) {
     }
 }
 
+fn set_status(handle: &AppHandle, text: &str) {
+    if let Some(win) = handle.get_webview_window("main") {
+        let safe = js_escape(text);
+        let _ = win.eval(&format!(
+            "var s=document.querySelector('.status'); if(s){{s.textContent='{safe}';}}"
+        ));
+    }
+}
+
 fn show_error(handle: &AppHandle, message: &str) {
     if let Some(win) = handle.get_webview_window("main") {
-        // Escape for a JS single-quoted string literal.
-        let safe = message
-            .replace('\\', "\\\\")
-            .replace('\'', "\\'")
-            .replace('\n', "\\n");
+        let safe = js_escape(message);
         let _ = win.eval(&format!(
             "window.frankmdError && window.frankmdError('{safe}');"
         ));
     }
+}
+
+fn js_escape(s: &str) -> String {
+    s.replace('\\', "\\\\")
+        .replace('\'', "\\'")
+        .replace('\n', "\\n")
 }
