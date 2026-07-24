@@ -1,0 +1,8 @@
+# Rust build output
+src-tauri/target/
+
+# Tauri generated schemas/artifacts
+src-tauri/gen/
+
+# Node (only used for the tauri CLI convenience wrapper)
+node_modules/

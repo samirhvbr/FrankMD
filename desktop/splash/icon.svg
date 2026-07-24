@@ -1,0 +1,57 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Pink circle background (matching outline color) -->
+  <circle cx="256" cy="256" r="250" fill="#FF6B9D"/>
+  <circle cx="256" cy="256" r="250" fill="none" stroke="#FF6B9D" stroke-width="12"/>
+  
+  <!-- Frankenstein head - cute cartoon style -->
+  <g transform="translate(256, 315) scale(1.8)">
+    <!-- Flat top head shape (green skin) -->
+    <path d="M-95 -100 L-95 -50 Q-95 60 0 80 Q95 60 95 -50 L95 -100 L-95 -100 Z" fill="#7CB342"/>
+    <path d="M-95 -100 L-95 -50 Q-95 60 0 80 Q95 60 95 -50 L95 -100 L-95 -100 Z" fill="none" stroke="#FF6B9D" stroke-width="6"/>
+    
+    <!-- Flat top of head -->
+    <rect x="-95" y="-130" width="190" height="35" rx="5" fill="#5D4037"/>
+    <rect x="-95" y="-130" width="190" height="35" rx="5" fill="none" stroke="#FF6B9D" stroke-width="4"/>
+    
+    <!-- Hair tufts sticking up -->
+    <rect x="-60" y="-155" width="12" height="30" rx="3" fill="#2E2E2E"/>
+    <rect x="-25" y="-160" width="12" height="35" rx="3" fill="#2E2E2E"/>
+    <rect x="15" y="-158" width="12" height="33" rx="3" fill="#2E2E2E"/>
+    <rect x="50" y="-152" width="12" height="27" rx="3" fill="#2E2E2E"/>
+    
+    <!-- Forehead stitches -->
+    <line x1="-50" y1="-80" x2="50" y2="-80" stroke="#444" stroke-width="4" stroke-linecap="round"/>
+    <line x1="-40" y1="-90" x2="-40" y2="-70" stroke="#444" stroke-width="3" stroke-linecap="round"/>
+    <line x1="-15" y1="-90" x2="-15" y2="-70" stroke="#444" stroke-width="3" stroke-linecap="round"/>
+    <line x1="15" y1="-90" x2="15" y2="-70" stroke="#444" stroke-width="3" stroke-linecap="round"/>
+    <line x1="40" y1="-90" x2="40" y2="-70" stroke="#444" stroke-width="3" stroke-linecap="round"/>
+    
+    <!-- Bolts on sides -->
+    <ellipse cx="-100" cy="-20" rx="18" ry="12" fill="#888"/>
+    <ellipse cx="-100" cy="-20" rx="18" ry="12" fill="none" stroke="#FF6B9D" stroke-width="3"/>
+    <ellipse cx="100" cy="-20" rx="18" ry="12" fill="#888"/>
+    <ellipse cx="100" cy="-20" rx="18" ry="12" fill="none" stroke="#FF6B9D" stroke-width="3"/>
+    
+    <!-- Cute eyes - big and friendly -->
+    <ellipse cx="-40" cy="-25" rx="28" ry="32" fill="white"/>
+    <ellipse cx="-40" cy="-25" rx="28" ry="32" fill="none" stroke="#FF6B9D" stroke-width="3"/>
+    <circle cx="-35" cy="-20" r="15" fill="#2D1B4E"/>
+    <circle cx="-30" cy="-25" r="5" fill="white"/>
+    
+    <ellipse cx="40" cy="-25" rx="28" ry="32" fill="white"/>
+    <ellipse cx="40" cy="-25" rx="28" ry="32" fill="none" stroke="#FF6B9D" stroke-width="3"/>
+    <circle cx="45" cy="-20" r="15" fill="#2D1B4E"/>
+    <circle cx="50" cy="-25" r="5" fill="white"/>
+    
+    <!-- Thick eyebrows -->
+    <path d="M-70 -60 Q-40 -75 -15 -55" stroke="#2E2E2E" stroke-width="10" stroke-linecap="round" fill="none"/>
+    <path d="M70 -60 Q40 -75 15 -55" stroke="#2E2E2E" stroke-width="10" stroke-linecap="round" fill="none"/>
+    
+    <!-- Cute smile -->
+    <path d="M-40 40 Q0 70 40 40" stroke="#444" stroke-width="6" stroke-linecap="round" fill="none"/>
+    
+    <!-- Rosy cheeks -->
+    <ellipse cx="-65" cy="20" rx="15" ry="10" fill="#FF9999" opacity="0.6"/>
+    <ellipse cx="65" cy="20" rx="15" ry="10" fill="#FF9999" opacity="0.6"/>
+  </g>
+</svg>

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "FrankMD",
+  "version": "0.1.0",
+  "identifier": "com.frankmd.desktop",
+  "build": {
+    "frontendDist": "../splash"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "FrankMD",
+        "width": 1200,
+        "height": 820,
+        "minWidth": 720,
+        "minHeight": 480,
+        "resizable": true,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["deb", "appimage", "app", "dmg"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "category": "Productivity",
+    "shortDescription": "Self-hosted markdown notes",
+    "longDescription": "Native desktop wrapper for FrankMD. Boots the FrankMD Docker container and opens it as a real native window with its own identity — no browser Alt-Tab grouping.",
+    "linux": {
+      "deb": {
+        "depends": ["docker.io"]
+      }
+    }
+  }
+}

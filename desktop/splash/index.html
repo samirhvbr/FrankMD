@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FrankMD</title>
+    <style>
+      :root {
+        --bg: #16151a;
+        --fg: #e8e6e3;
+        --muted: #9a97a3;
+        --accent: #ff6b9d;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      .logo {
+        width: 96px;
+        height: 96px;
+        animation: pulse 2s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(0.94); opacity: 0.75; }
+      }
+      .title {
+        font-size: 1.35rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+      .spinner {
+        width: 28px;
+        height: 28px;
+        border: 3px solid rgba(255, 255, 255, 0.15);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .status { color: var(--muted); font-size: 0.9rem; min-height: 1.2em; }
+      .error {
+        display: none;
+        max-width: 30rem;
+        padding: 0 2rem;
+        text-align: center;
+        white-space: pre-wrap;
+        line-height: 1.5;
+        color: #ffb4b4;
+        font-size: 0.92rem;
+      }
+      body.has-error .logo { animation: none; opacity: 0.4; }
+      body.has-error .spinner,
+      body.has-error .status { display: none; }
+      body.has-error .error { display: block; }
+    </style>
+  </head>
+  <body>
+    <img class="logo" src="icon.svg" alt="FrankMD" />
+    <div class="title">FrankMD</div>
+    <div class="spinner"></div>
+    <div class="status">Starting…</div>
+    <div class="error" id="error"></div>
+
+    <script>
+      // Called from Rust (see show_error in src-tauri/src/main.rs) on boot failure.
+      window.frankmdError = function (message) {
+        document.body.classList.add("has-error");
+        document.getElementById("error").textContent = message;
+      };
+    </script>
+  </body>
+</html>
