@@ -73,6 +73,8 @@ fn health_url() -> String {
 }
 
 fn main() {
+    augment_path();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
@@ -83,6 +85,31 @@ fn main() {
         })
         .run(tauri::generate_context!())
         .expect("error while running the FrankMD desktop app");
+}
+
+/// A macOS `.app` launched from Finder/Dock inherits a minimal PATH
+/// (`/usr/bin:/bin:/usr/sbin:/sbin`) that excludes where Docker lives
+/// (`/usr/local/bin`, Homebrew, Docker Desktop, Rancher). Prepend those so
+/// `Command::new("docker")` resolves. Harmless if already present, and on
+/// Linux these are typically no-ops.
+fn augment_path() {
+    let mut extra: Vec<String> = vec![
+        "/usr/local/bin".into(),
+        "/opt/homebrew/bin".into(),
+        "/Applications/Docker.app/Contents/Resources/bin".into(),
+    ];
+    if let Some(home) = std::env::var_os("HOME") {
+        let h = Path::new(&home);
+        extra.push(h.join(".docker/bin").to_string_lossy().into_owned());
+        extra.push(h.join(".rd/bin").to_string_lossy().into_owned()); // Rancher Desktop
+    }
+    let current = std::env::var("PATH").unwrap_or_default();
+    let joined = if current.is_empty() {
+        extra.join(":")
+    } else {
+        format!("{}:{current}", extra.join(":"))
+    };
+    std::env::set_var("PATH", joined);
 }
 
 fn boot(handle: AppHandle) {

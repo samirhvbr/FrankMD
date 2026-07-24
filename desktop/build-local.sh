@@ -164,25 +164,49 @@ preflight() {
   fi
 }
 
-# ── Versão: ../version.md -> tauri.conf.json + Cargo.toml ────────────────────
-# version.md é a fonte da verdade do fork (padrão da casa). Grava a versão nos
-# manifests do app pra o instalador e o "Sobre" saírem com o número certo.
-# Tolerante: se ../version.md não existir, mantém o que está no tauri.conf.json.
+# ── awk in-place (POSIX, portável mac/linux): substitui SÓ a 1ª ocorrência ───
+_awk_i() {  # $1=arquivo  $2=programa awk
+  awk "$2" "$1" > "$1.tmp" && mv "$1.tmp" "$1"
+}
+
+# bundle.copyright do tauri.conf.json — é o que o "Sobre" (About do macOS) mostra
+# embaixo da versão. Usamos essa linha pra exibir AS DUAS versões (fork + FrankMD).
+set_copyright() {
+  _awk_i src-tauri/tauri.conf.json \
+    "!d && /\"copyright\"[[:space:]]*:/ {sub(/\"copyright\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/, \"\\\"copyright\\\": \\\"$1\\\"\"); d=1} {print}"
+}
+
+# ── Versão: ../version.md + lib/frankmd/version.rb -> manifests + "Sobre" ─────
+# version.md é a fonte da verdade do fork (padrão da casa); lib/frankmd/version.rb
+# é a versão do FrankMD upstream em que o fork está baseado. Grava a versão do
+# fork nos manifests (instalador/janela) e monta a linha do "Sobre" com AS DUAS.
+# Tolerante: sem version.md, mantém o tauri.conf; sem version.rb, mostra só o fork.
 sync_version() {
+  local base=""
+  if [ -f ../lib/frankmd/version.rb ]; then
+    base="$(grep -o 'VERSION = "[^"]*"' ../lib/frankmd/version.rb | head -1 | sed 's/.*"\([^"]*\)".*/\1/')"
+  fi
+
   if [ ! -f ../version.md ]; then
     echo "    (../version.md ausente — mantendo a versão atual do tauri.conf.json)"
+    [ -n "$base" ] && { set_copyright "FrankMD $base"; echo "    Sobre: FrankMD $base"; }
     return 0
   fi
   local ver; ver="$(head -1 ../version.md | tr -d '[:space:]')"
   if [ -z "$ver" ]; then echo "    (../version.md vazio — pulando)"; return 0; fi
-  echo "    versão do fork: $ver"
-  # awk (POSIX, portável mac/linux) substituindo SÓ a 1ª ocorrência de cada manifesto.
+  echo "    versão do fork: $ver${base:+  (base FrankMD $base)}"
+
   # tauri.conf.json: a chave "version" de topo.
-  awk -v v="$ver" '!d && /"version"[[:space:]]*:/ {sub(/"version"[[:space:]]*:[[:space:]]*"[^"]*"/, "\"version\": \"" v "\""); d=1} {print}' \
-    src-tauri/tauri.conf.json > src-tauri/tauri.conf.json.tmp && mv src-tauri/tauri.conf.json.tmp src-tauri/tauri.conf.json
+  _awk_i src-tauri/tauri.conf.json \
+    "!d && /\"version\"[[:space:]]*:/ {sub(/\"version\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/, \"\\\"version\\\": \\\"$ver\\\"\"); d=1} {print}"
   # Cargo.toml: a 1ª linha 'version = "..."' (a do [package]; deps usam version inline em { }).
-  awk -v v="$ver" '!d && /^version = "/ {sub(/"[^"]*"/, "\"" v "\""); d=1} {print}' \
-    src-tauri/Cargo.toml > src-tauri/Cargo.toml.tmp && mv src-tauri/Cargo.toml.tmp src-tauri/Cargo.toml
+  _awk_i src-tauri/Cargo.toml \
+    "!d && /^version = \"/ {sub(/\"[^\"]*\"/, \"\\\"$ver\\\"\"); d=1} {print}"
+
+  # linha do "Sobre" com as duas versões
+  local copyright="fork $ver"; [ -n "$base" ] && copyright="fork $ver · FrankMD $base"
+  set_copyright "$copyright"
+  echo "    Sobre: $copyright"
 }
 
 # ── macOS: assinatura (Developer ID) + notarização (senha de app) ────────────
