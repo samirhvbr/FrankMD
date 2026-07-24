@@ -25,6 +25,7 @@
   },
   "bundle": {
     "active": true,
+    "copyright": "fork 0.1.0 · FrankMD 0.6.1",
     "targets": ["deb", "appimage", "app", "dmg"],
     "icon": [
       "icons/32x32.png",
