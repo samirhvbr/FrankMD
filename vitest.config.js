@@ -14,6 +14,9 @@ export default defineConfig({
       // Point at the vendored file rather than an npm copy, so the sanitizer
       // specs exercise the exact artifact that ships to the browser.
       'dompurify': path.resolve(__dirname, 'vendor/javascript/dompurify.js'),
+      // Vendored (not an npm dep); its own @codemirror/* imports still resolve
+      // from node_modules like the other editor packages.
+      '@replit/codemirror-vim': path.resolve(__dirname, 'vendor/javascript/@replit--codemirror-vim.js'),
       '@hotwired/turbo-rails': path.resolve(__dirname, 'test/javascript/mocks/turbo-rails.js'),
       '@rails/request.js': path.resolve(__dirname, 'test/javascript/mocks/requestjs.js'),
     },
